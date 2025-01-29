@@ -9,10 +9,18 @@ public class CameraController : Node2D
     private const float MinZoom = 0.5f;
     private const float MaxZoom = 3.0f;
 
+    private bool isDragging = false;
+    private Vector2 dragStart;
+
     public override void _Ready()
     {
         mapSprite = GetNode<Sprite2D>(spritePath);
         camera = GetViewport().GetCamera2D();
+
+        if (camera == null)
+        {
+            GD.PrintErr("Camera2D not found! Make sure you have a Camera2D node in the scene.");
+        }
     }
 
     public override void _Process(double delta)
@@ -57,6 +65,31 @@ public class CameraController : Node2D
         {
             // Двигаем камеру в противоположную сторону от жеста
             camera.Position -= panGesture.Delta * camera.Zoom;
+        }
+
+        if (@event is InputEventMouseButton mouseButton)
+        {
+            GD.Print($"Mouse button event: ButtonIndex={mouseButton.ButtonIndex}, Pressed={mouseButton.Pressed}");
+            if (mouseButton.ButtonIndex == MouseButton.Left && mouseButton.Pressed)
+            {
+                isDragging = true;
+                dragStart = GetViewport().GetMousePosition();
+            }
+
+            if (mouseButton.ButtonIndex == MouseButton.Left && !mouseButton.Pressed)
+            {
+                isDragging = false;
+            }
+        }
+
+        if (@event is InputEventMouseMotion mouseMotion && isDragging)
+        {
+            GD.Print($"Mouse motion event: Delta={mouseMotion.Relative}");
+            Vector2 dragEnd = GetViewport().GetMousePosition();
+            Vector2 delta = dragEnd - dragStart;
+
+            camera.Position -= delta * camera.Zoom;
+            dragStart = dragEnd;
         }
     }
 }
