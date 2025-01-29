@@ -1,13 +1,14 @@
-[gd_scene load_steps=3 format=3 uid="uid://dvj8uejwuw06d"]
+[gd_scene load_steps=3 format=3 uid="uid://ds72j8p5388fg"]
 
-[ext_resource type="Script" path="res://map.gd" id="1_522r3"]
+[ext_resource type="Script" path="res://scripts/camera_map.cs" id="1_6o6rn"]
 [ext_resource type="Texture2D" uid="uid://dobj1exbc0w7n" path="res://image-texture/effecoria.jpg" id="2_not7g"]
 
 [node name="Node2D" type="Node2D"]
-script = ExtResource("1_522r3")
+script = ExtResource("1_6o6rn")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 position = Vector2(4, 0)
 texture = ExtResource("2_not7g")
 
 [node name="Camera2D" type="Camera2D" parent="."]
+script = ExtResource("1_6o6rn")

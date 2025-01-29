@@ -14,6 +14,10 @@ config/name="Legend of Effecoria"
 config/features=PackedStringArray("4.3", "GL Compatibility")
 config/icon="res://icon.svg"
 
+[dotnet]
+
+project/assembly_name="Legend of Effecoria"
+
 [input]
 
 ui_left={
