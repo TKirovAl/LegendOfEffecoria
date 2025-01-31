@@ -1,62 +1,134 @@
 using Godot;
 
-public class CameraController : Node2D
+public class CameraMap : Node2D
 {
-    [Export] private NodePath spritePath;
-    private Sprite2D mapSprite;
-    private Camera2D camera;
+    [Export] private NodePath mapSpritePath; // Путь к спрайту карты
+    [Export] private float minZoom = 0.5f;  // Минимальный зум
+    [Export] private float maxZoom = 3.0f;  // Максимальный зум
 
-    private const float MinZoom = 0.5f;
-    private const float MaxZoom = 3.0f;
+    private Sprite2D mapSprite;             // Спрайт карты
+    private Camera2D camera;                // Камера
+    private bool isDragging = false;        // Флаг перетаскивания
+    private Vector2 dragStart;              // Начальная позиция перетаскивания
 
     public override void _Ready()
     {
-        mapSprite = GetNode<Sprite2D>(spritePath);
+        // Инициализация спрайта карты
+        mapSprite = GetNode<Sprite2D>(mapSpritePath);
+        if (mapSprite == null)
+        {
+            GD.PrintErr("Map sprite not found! Check the mapSpritePath.");
+            return;
+        }
+
+        // Инициализация камеры
         camera = GetViewport().GetCamera2D();
+        if (camera == null)
+        {
+            GD.PrintErr("Camera2D not found! Make sure you have a Camera2D node in the scene.");
+            return;
+        }
     }
 
     public override void _Process(double delta)
     {
         if (camera == null || mapSprite == null) return;
 
-        // Получаем размеры спрайта и камеры
-        Vector2 spriteSize = mapSprite.Texture.GetSize();
-        Vector2 viewportSize = GetViewportRect().Size;
-
-        // Вычисляем границы для камеры
-        float minX = viewportSize.x / 2;
-        float maxX = spriteSize.x - viewportSize.x / 2;
-        float minY = viewportSize.y / 2;
-        float maxY = spriteSize.y - viewportSize.y / 2;
-
-        // Ограничиваем позицию камеры
-        Vector2 clampedPosition = new Vector2(
-            Mathf.Clamp(camera.Position.x, minX, maxX),
-            Mathf.Clamp(camera.Position.y, minY, maxY)
-        );
-
-        camera.Position = clampedPosition;
+        // Ограничение позиции камеры в рамках карты
+        ClampCameraPosition();
     }
 
     public override void _Input(InputEvent @event)
     {
+        // Обработка масштабирования (зума)
         if (@event is InputEventMagnifyGesture magnifyGesture)
         {
-            // Изменяем масштаб камеры
-            float zoomFactor = magnifyGesture.Factor;
-            camera.Zoom *= zoomFactor;
-
-            // Ограничиваем масштаб
-            camera.Zoom = new Vector2(
-                Mathf.Clamp(camera.Zoom.x, MinZoom, MaxZoom),
-                Mathf.Clamp(camera.Zoom.y, MinZoom, MaxZoom)
-            );
+            HandleZoom(magnifyGesture.Factor);
         }
 
+        // Обработка перемещения с помощью жестов
         if (@event is InputEventPanGesture panGesture)
         {
-            // Двигаем камеру в противоположную сторону от жеста
-            camera.Position -= panGesture.Delta * camera.Zoom;
+            HandlePanGesture(panGesture.Delta);
         }
+
+        // Обработка нажатия кнопки мыши для начала перетаскивания
+        if (@event is InputEventMouseButton mouseButton)
+        {
+            if (mouseButton.ButtonIndex == MouseButton.Left && mouseButton.Pressed)
+            {
+                StartDragging(mouseButton.Position);
+            }
+            else if (mouseButton.ButtonIndex == MouseButton.Left && !mouseButton.Pressed)
+            {
+                StopDragging();
+            }
+        }
+
+        // Обработка движения мыши при перетаскивании
+        if (@event is InputEventMouseMotion mouseMotion && isDragging)
+        {
+            HandleDragging(mouseMotion.Position);
+        }
+    }
+
+    private void HandleZoom(float zoomFactor)
+    {
+        // Изменяем масштаб камеры
+        camera.Zoom *= zoomFactor;
+
+        // Ограничиваем масштаб
+        camera.Zoom = new Vector2(
+            Mathf.Clamp(camera.Zoom.x, minZoom, maxZoom),
+            Mathf.Clamp(camera.Zoom.y, minZoom, maxZoom)
+        );
+    }
+
+    private void HandlePanGesture(Vector2 delta)
+    {
+        // Двигаем камеру в противоположную сторону от жеста
+        camera.Position -= delta * camera.Zoom;
+    }
+
+    private void StartDragging(Vector2 position)
+    {
+        isDragging = true;
+        dragStart = position;
+    }
+
+    private void StopDragging()
+    {
+        isDragging = false;
+    }
+
+    private void HandleDragging(Vector2 currentPosition)
+    {
+        // Вычисляем разницу между текущей и начальной позицией
+        Vector2 delta = currentPosition - dragStart;
+
+        // Перемещаем камеру с учетом масштаба
+        camera.Position -= delta / camera.Zoom;
+
+        // Обновляем начальную позицию
+        dragStart = currentPosition;
+    }
+
+    private void ClampCameraPosition()
+    {
+        // Получаем размеры карты и видового окна
+        Vector2 mapSize = mapSprite.Texture.GetSize();
+        Vector2 viewportSize = GetViewportRect().Size / camera.Zoom;
+
+        // Вычисляем границы для камеры
+        float minX = viewportSize.x / 2;
+        float maxX = mapSize.x - viewportSize.x / 2;
+        float minY = viewportSize.y / 2;
+        float maxY = mapSize.y - viewportSize.y / 2;
+
+        // Ограничиваем позицию камеры
+        camera.Position = new Vector2(
+            Mathf.Clamp(camera.Position.x, minX, maxX),
+            Mathf.Clamp(camera.Position.y, minY, maxY)
+        );
     }
 }

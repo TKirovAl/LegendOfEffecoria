@@ -1,0 +1,6 @@
+extends Node
+
+var entitys = []
+
+
+	

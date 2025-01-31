@@ -11,3 +11,4 @@ position = Vector2(4, 0)
 texture = ExtResource("2_not7g")
 
 [node name="Camera2D" type="Camera2D" parent="."]
+script = ExtResource("1_6o6rn")
